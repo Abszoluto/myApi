@@ -1,0 +1,5 @@
+fastapi
+uvicorn
+mangum
+cv2
+deepface
