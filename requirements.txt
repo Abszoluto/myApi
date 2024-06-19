@@ -1,5 +1,5 @@
 fastapi
 uvicorn
 mangum
-cv2
+opencv-python
 deepface

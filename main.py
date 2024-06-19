@@ -2,12 +2,11 @@ import json
 import os
 from typing import Literal, Optional
 from uuid import uuid4
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, UploadFile, File
 import random
 from fastapi.encoders import jsonable_encoder
 from pydantic import BaseModel
 from mangum import Mangum
-
 
 class Book(BaseModel):
     name: str
@@ -69,3 +68,7 @@ async def get_book(book_id: str):
             return book
 
     raise HTTPException(404, f"Book ID {book_id} not found in database.")
+
+@app.post("/check-identity")
+def submit(image: UploadFile = File(...)):
+        return {"Uploaded filename": image.filename}
