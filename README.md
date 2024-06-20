@@ -45,3 +45,6 @@ Start FastAPI.
 ```bash
 python3 -m uvicorn main:app
 ```
+
+Check the docs !!
+http://127.0.0.1:8000/docs
