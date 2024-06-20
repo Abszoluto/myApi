@@ -27,10 +27,10 @@ Base.metadata.create_all(bind=engine)
 # FastAPI app
 app = FastAPI()
 
-@app.post("/upload/")
+@app.post("/register-image/")
 async def upload_image(file: UploadFile = File(...), name: str = Form(...)):
     try:
-        # Read image file
+        # Read input image file
         contents = await file.read()
         
         # Ensure the file is an image and get the face encoding
@@ -54,10 +54,10 @@ async def upload_image(file: UploadFile = File(...), name: str = Form(...)):
     except Exception as e:
         raise HTTPException(status_code=400, detail="Invalid image file")
 
-@app.post("/check/")
+@app.post("/recognize-image/")
 async def check_image(file: UploadFile = File(...)):
     try:
-        # Read image file
+        # Read input image file
         contents = await file.read()
         
         # Ensure the file is an image and get the face encoding
