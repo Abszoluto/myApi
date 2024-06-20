@@ -1,7 +1,3 @@
-# FastAPI Tutorial
-
-This is a simple example FastAPI application that pretends to be a bookstore.
-
 # Deploying to AWS EC2
 
 Log into your AWS account and create an EC2 instance (`t2.micro`), using the latest stable
@@ -13,12 +9,6 @@ our dependencies.
 ```bash
 sudo apt-get update
 sudo apt install -y python3-pip nginx
-```
-
-Clone the FastAPI server app (or create your `main.py` in Python).
-
-```bash
-git clone https://github.com/pixegami/fastapi-tutorial.git
 ```
 
 Add the FastAPI configuration to NGINX's folder. Create a file called `fastapi_nginx` (like the one in this repository).
@@ -39,6 +29,10 @@ server {
 }
 ```
 
+Install all the dependencies on requirements.txt
+```bash
+python3 -m pip install -r requirements.txt
+```
 
 Start NGINX.
 
@@ -49,40 +43,5 @@ sudo service nginx restart
 Start FastAPI.
 
 ```bash
-cd fastapi-tutorial
 python3 -m uvicorn main:app
-```
-
-Update EC2 security-group settings for your instance to allow HTTP traffic to port 80.
-
-Now when you visit your public IP of the instance, you should be able to access your API.
-
-# Deploying FastAPI to AWS Lambda
-
-We'll need to modify the API so that it has a Lambda handler. Use Mangum:
-
-```python
-from mangum import Mangum
-
-app = FastAPI()
-handler = Mangum(app)
-```
-
-We'll also need to install the dependencies into a local directory so we can zip it up.
-
-```bash
-pip install -t lib -r requirements.txt
-```
-
-We now need to zip it up.
-
-```bash
-(cd lib; zip ../lambda_function.zip -r .)
-```
-
-Now add our FastAPI file and the JSON file.
-
-```bash
-zip lambda_function.zip -u main.py
-zip lambda_function.zip -u books.json
 ```
