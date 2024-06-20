@@ -1,4 +1,4 @@
-# Deploying to AWS EC2
+# Step-by-step on making the code works
 
 Log into your AWS account and create an EC2 instance (`t2.micro`), using the latest stable
 Ubuntu Linux AMI.
