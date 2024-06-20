@@ -1,74 +1,90 @@
-import json
-import os
-from typing import Literal, Optional
-from uuid import uuid4
-from fastapi import FastAPI, HTTPException, UploadFile, File
-import random
-from fastapi.encoders import jsonable_encoder
-from pydantic import BaseModel
-from mangum import Mangum
+from fastapi import FastAPI, File, UploadFile, HTTPException, Form
+from sqlalchemy import Column, Integer, LargeBinary, String, create_engine
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy.exc import SQLAlchemyError
+import face_recognition
+import io
+import numpy as np
 
-class Book(BaseModel):
-    name: str
-    genre: Literal["fiction", "non-fiction"]
-    price: float
-    book_id: Optional[str] = uuid4().hex
+# Database setup
+DATABASE_URL = "sqlite:///./test.db"
+engine = create_engine(DATABASE_URL)
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+Base = declarative_base()
 
+# Database model
+class ImageModel(Base):
+    __tablename__ = "images"
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, index=True)
+    data = Column(LargeBinary)
+    encoding = Column(LargeBinary)
 
-BOOKS_FILE = "books.json"
-BOOKS = []
+# Create the database tables
+Base.metadata.create_all(bind=engine)
 
-if os.path.exists(BOOKS_FILE):
-    with open(BOOKS_FILE, "r") as f:
-        BOOKS = json.load(f)
-
+# FastAPI app
 app = FastAPI()
-handler = Mangum(app)
 
+@app.post("/upload/")
+async def upload_image(file: UploadFile = File(...), name: str = Form(...)):
+    try:
+        # Read image file
+        contents = await file.read()
+        
+        # Ensure the file is an image and get the face encoding
+        image = face_recognition.load_image_file(io.BytesIO(contents))
+        encodings = face_recognition.face_encodings(image)
+        if len(encodings) != 1:
+            raise HTTPException(status_code=400, detail="Image must contain exactly one face")
+        encoding = encodings[0]
+        
+        # Save image data and encoding to database
+        db = SessionLocal()
+        db_image = ImageModel(name=name, data=contents, encoding=encoding.tobytes())
+        db.add(db_image)
+        db.commit()
+        db.refresh(db_image)
+        db.close()
+        
+        return {"filename": file.filename, "name": name, "id": db_image.id}
+    except SQLAlchemyError as e:
+        raise HTTPException(status_code=500, detail="Database error")
+    except Exception as e:
+        raise HTTPException(status_code=400, detail="Invalid image file")
 
-@app.get("/")
-async def root():
-    return {"message": "Welcome to my bookstore app!"}
+@app.post("/check/")
+async def check_image(file: UploadFile = File(...)):
+    try:
+        # Read image file
+        contents = await file.read()
+        
+        # Ensure the file is an image and get the face encoding
+        image = face_recognition.load_image_file(io.BytesIO(contents))
+        encodings = face_recognition.face_encodings(image)
+        if len(encodings) != 1:
+            raise HTTPException(status_code=400, detail="Image must contain exactly one face")
+        encoding = encodings[0]
+        
+        # Check if the encoding matches any in the database
+        db = SessionLocal()
+        db_images = db.query(ImageModel).all()
+        
+        for db_image in db_images:
+            db_encoding = np.frombuffer(db_image.encoding, dtype=np.float64)
+            match = face_recognition.compare_faces([db_encoding], encoding)
+            if match[0]:
+                db.close()
+                return {"match": True, "id": db_image.id, "name": db_image.name}
+        
+        db.close()
+        return {"match": False}
+    except SQLAlchemyError as e:
+        raise HTTPException(status_code=500, detail="Database error")
+    except Exception as e:
+        raise HTTPException(status_code=400, detail="Invalid image file")
 
-
-@app.get("/random-book")
-async def random_book():
-    return random.choice(BOOKS)
-
-
-@app.get("/list-books")
-async def list_books():
-    return {"books": BOOKS}
-
-
-@app.get("/book_by_index/{index}")
-async def book_by_index(index: int):
-    if index < len(BOOKS):
-        return BOOKS[index]
-    else:
-        raise HTTPException(404, f"Book index {index} out of range ({len(BOOKS)}).")
-
-
-@app.post("/add-book")
-async def add_book(book: Book):
-    book.book_id = uuid4().hex
-    json_book = jsonable_encoder(book)
-    BOOKS.append(json_book)
-
-    with open(BOOKS_FILE, "w") as f:
-        json.dump(BOOKS, f)
-
-    return {"book_id": book.book_id}
-
-
-@app.get("/get-book")
-async def get_book(book_id: str):
-    for book in BOOKS:
-        if book.book_id == book_id:
-            return book
-
-    raise HTTPException(404, f"Book ID {book_id} not found in database.")
-
-@app.post("/check-identity")
-def submit(image: UploadFile = File(...)):
-        return {"Uploaded filename": image.filename}
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)
