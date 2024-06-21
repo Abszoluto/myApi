@@ -1,4 +1,11 @@
-# Step-by-step on making the code works
+# Facial recognition API
+
+This API is used for registering new faces to be recognized in the future, and for recognizing existing faces.
+This can be used for multiple purposes, like a security system based on image recognition.
+
+## Installation
+
+# Deploying to AWS EC2
 
 Log into your AWS account and create an EC2 instance (`t2.micro`), using the latest stable
 Ubuntu Linux AMI.
@@ -34,6 +41,8 @@ Install all the dependencies on requirements.txt
 python3 -m pip install -r requirements.txt
 ```
 
+## Usage
+
 Start NGINX.
 
 ```bash
@@ -46,5 +55,27 @@ Start FastAPI.
 python3 -m uvicorn main:app
 ```
 
-Check the docs !!
-http://127.0.0.1:8000/docs
+# Endpoint register-person
+Use this endpoint to register the name, the photo and the status of a person.
+The status can be used for acknowledge an specific person of a photo, for example, friend or family.
+
+# Endpoint recognize-image
+Use this endpoint to upload a photo and verify the emotion of the person and if this person is registered on the system.
+
+## Accessing the API
+If you use this API on EC2 an followed the configurations above, go on browser and access via: 
+```
+http://YOUR_EC2_IP
+```
+Dont forget to check de documentation for testing and learning how to use
+```
+http://YOUR_EC2_IP/docs/
+```
+
+If you`re using this API on localhost:
+```
+http://127.0.0.1:8000/docs/
+```
+## License
+
+[MIT](https://choosealicense.com/licenses/mit/)
