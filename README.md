@@ -1,6 +1,6 @@
 # Facial recognition API
 
-This API is used for registering new faces to be recognized in the future, and for recognizing existing faces.
+This API is used for registering new faces, for recognizing existing faces registered and emotions.
 This can be used for multiple purposes, like a security system based on image recognition.
 
 ## Installation
